@@ -4,6 +4,9 @@ Public Recall Sentinel is a GenLayer dApp for independently checking whether an 
 
 Current audited protocol fingerprint: `PRS-1.1.0-audit`. The verified Studionet deployment is `0x0cd1908393c24b0426bC7Ac75901afdb14d9D3de`. The earlier deployment at `0xd6a356e38b585eD997A188802CC5e6f0166231c0` is superseded.
 
+- Live dApp: https://publicrecallsentinel.netlify.app
+- GitHub: https://github.com/Azaria723/PublicRecallSentinel
+
 ## Why GenLayer
 
 An ordinary smart contract cannot fetch a changing public recall database or interpret whether a prose product description applies to a registered lot. GenLayer validators independently retrieve the official record and reach consensus on a deliberately closed semantic result. The contract then commits only deterministic states and accounting effects.
