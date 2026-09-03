@@ -1,6 +1,6 @@
 # Deployment candidate
 
-Status: ready for a new GenLayer Studio instance.
+Status: deployed and fingerprint-verified on GenLayer Studionet.
 
 - Source: `contracts/PublicRecallSentinel.py`
 - Protocol fingerprint: `PRS-1.1.0-audit`
@@ -8,6 +8,8 @@ Status: ready for a new GenLayer Studio instance.
 - Constructor arguments: none
 - Local contract tests: `24 passed`
 - Frontend production build: passed
+- Contract: `0x0cd1908393c24b0426bC7Ac75901afdb14d9D3de`
+- Explorer: https://explorer-studio.genlayer.com/address/0x0cd1908393c24b0426bC7Ac75901afdb14d9D3de
 
 ## Mandatory post-deployment check
 
@@ -19,4 +21,4 @@ get_protocol_version() -> PRS-1.1.0-audit
 
 Then inspect the deployed source in Explorer and confirm the authority policy through `get_source_policy()`. The lifecycle script refuses to continue if the fingerprint differs.
 
-The former address `0xd6a356e38b585eD997A188802CC5e6f0166231c0` is evidence for the superseded pre-audit revision only.
+The deployed instance returned the required fingerprint and the exact FOOD/DRUG FDA source policy. The former address `0xd6a356e38b585eD997A188802CC5e6f0166231c0` is evidence for the superseded pre-audit revision only.
