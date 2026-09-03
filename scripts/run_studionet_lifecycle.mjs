@@ -25,6 +25,9 @@ async function write(functionName,args=[],value=0n){
 }
 
 console.log(`contract=${contract}`);console.log(`actor=${account.address}`);
+const version=await reader.readContract({address:contract,functionName:'get_protocol_version',args:[]});
+if(version!=='PRS-1.1.0-audit')throw new Error(`Wrong deployed revision: ${version}`);
+console.log(`protocol_version=${version}`);
 const before=await parse('get_counts');console.log(`counts_before=${JSON.stringify(before)}`);
 const positiveWatch=BigInt(before.watch_count),positiveSubmission=BigInt(before.submission_count);
 await write('register_watch',[account.address,'FOOD','HandNatural','H&NATURAL 2 PACK! BRAZIL SEED 60 PIECES, PURE NATURAL SEMILLA DE BRASIL FOR 60 DAYS, 5 GRAMS PER BOX, 2 BLACK BOXES.','No Lot code on label']);

@@ -2,6 +2,8 @@
 
 Public Recall Sentinel is a GenLayer dApp for independently checking whether an official FDA recall record matches a distributor's precisely registered product identity. It keeps the canonical source, reporter bond, verdict, retries, and remediation checks auditable on-chain.
 
+Current audited protocol fingerprint: `PRS-1.1.0-audit`. The earlier deployment at `0xd6a356e38b585eD997A188802CC5e6f0166231c0` is superseded and must not be submitted as the final contract.
+
 ## Why GenLayer
 
 An ordinary smart contract cannot fetch a changing public recall database or interpret whether a prose product description applies to a registered lot. GenLayer validators independently retrieve the official record and reach consensus on a deliberately closed semantic result. The contract then commits only deterministic states and accounting effects.
@@ -60,6 +62,7 @@ Build the frontend again. Never reuse an address from another source revision.
 - `tests/` direct contract regression suite
 - `frontend/` Vite/React dApp
 - `docs/` architecture, threat model, and test procedure
+- `docs/adversarial-audit.md` findings, resolutions, and residual risks
 - `verification/` truthfully separated local and Studionet evidence
 
 This is testnet software and not a replacement for official FDA safety guidance.

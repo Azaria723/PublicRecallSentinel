@@ -1,5 +1,7 @@
 # Studionet verification
 
+> Superseded revision: these transactions prove the original lifecycle on contract `0xd6a3…31c0`, but that instance predates the adversarial-audit fixes in `PRS-1.1.0-audit`. Do not use it as the final submission contract. A new deployment and fresh lifecycle evidence are required.
+
 Date: 2026-09-03
 
 Contract: `0xd6a356e38b585eD997A188802CC5e6f0166231c0`
