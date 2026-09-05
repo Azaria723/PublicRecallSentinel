@@ -4,7 +4,8 @@ Public Recall Sentinel is a GenLayer dApp for independently checking whether an 
 
 Current verified deployment: `PRS-1.2.0-settlement` at `0xC04400A0B02e495731AD0a5fbc1A1f777Fe9017c`. Its deployed source bytes match this repository, and linked SEND payouts were verified through recipient credit and exact +0.001 GEN balance deltas. Do not use `0x0cd1908393c24b0426bC7Ac75901afdb14d9D3de` for new bonds: its refund child failed while accounting incorrectly reported payment. The earlier `0xd6a356e38b585eD997A188802CC5e6f0166231c0` is also superseded. See [settlement correction](verification/settlement-correction.md).
 
-- Live dApp: https://publicrecallsentinel.netlify.app
+- Live dApp (Cloudflare Pages): https://public-recall-sentinel.pages.dev
+- Previous Netlify deployment: https://publicrecallsentinel.netlify.app (superseded; do not use for new bonds)
 - GitHub: https://github.com/Azaria723/PublicRecallSentinel
 
 ## Why GenLayer
