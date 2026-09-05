@@ -1,17 +1,14 @@
-# Local verification
+# Local verification — 2026-09-05
 
-Date: 2026-09-03
+Revision: PRS-1.2.0-settlement (not yet live deployed).
 
-Commands:
+| Check | Result |
+|---|---|
+| `python -m pytest tests -q` | 48 passed |
+| `node --test tests/settlement-proof.test.mjs` | 11 passed |
+| `python -X utf8 -c "from genvm_linter.cli import cli; cli()" check contracts/PublicRecallSentinel.py` | Lint and SDK validation passed |
+| Frontend `npm run build` | Passed; vendor annotation and bundle-size warnings remain |
 
-```text
-pytest -q
-........................ [100%]
-24 passed
-```
+DirectMode runs the actual contract methods. Web/LLM data, receipt transport and outbound EthSend execution are controlled mocks. Tests assert external empty-calldata transfer emission, preserved liabilities while pending, evidence binding, caller authorization, credit confirmation, failed payout retry, reserve isolation and replay protection. They do not execute an actual recipient transfer. Receipt-oracle tests use mocked API data, not user-authored evidence accepted by the deployed contract.
 
-The suite runs the contract itself in GenLayer DirectMode with strict web/LLM mocks and pickling checks. This is local regression evidence, not a claim of a successful Studionet lifecycle.
-
-Frontend production build completed successfully with the audited address supplied only through ignored `.env.local`. Browser verification read three live watches from Studionet—one `MATCH`, two `NO_MATCH`, and zero active reporter bonds—with no console warnings or errors.
-
-Netlify production verification passed at https://publicrecallsentinel.netlify.app: the production bundle displays contract `0x0cd190…d9D3de`, the same three authoritative watch states, zero active bonds, no console warnings/errors, and a non-root `/audit-proof` request resolves through the SPA fallback instead of returning Netlify 404.
+The historical browser observation of zero active bonds was based on incorrect old accounting and does not prove receipt. New frontend source blocks bond submissions against the old protocol. New production deployment and browser/live payout evidence remain pending the new contract address.

@@ -1,0 +1,60 @@
+{
+  "contract": "0xC04400A0B02e495731AD0a5fbc1A1f777Fe9017c",
+  "protocol": "PRS-1.2.0-settlement",
+  "source_sha256": "b162ea8afa6049720fe6775399a0b5295c05ecd591e137856cd218766d458b30",
+  "source_byte_parity": true,
+  "chain_id": 61999,
+  "reporter": "0x67A1A08Fc4cf7D05c859d0d3D8398a3A30B1677e",
+  "positive_match": {
+    "register": "0xbaa3033c0a77bb0e081fe637ace005b27b5969ccff63a81086f2fd97efc48154",
+    "submit": "0x54c5713f433ed305fbab2082b6a6fbb9f06822e3c9d728595f7babca9f23ec38",
+    "assess": "0x5373cdce536e9416e4315f12e56996248899e66c8420e5d23c1465da6580a37c",
+    "verdict": "MATCH",
+    "refund_parent": "0xfb7a8c9035d9ec3241300b24db6cb0d711bdb3ef30cc39bed7f7bf8f3cdd9f57",
+    "refund_child": "0x3cb9423ee489c6339dfc05e651f4e2505acd2558fcaeb4dea3c8c21c0a779ca5",
+    "child_type": 0,
+    "child_status": "FINALIZED",
+    "value_credited": true,
+    "value_wei": "1000000000000000",
+    "recipient_balance_before_wei": "399565000000000000000",
+    "recipient_balance_after_wei": "399566000000000000000",
+    "recipient_balance_delta_wei": "1000000000000000",
+    "reconcile": "0xd75c85c3ef93db6f287c0120756e357326c96153061c3904107c8133f847e82f"
+  },
+  "negative_no_match": {
+    "register": "0x0490c9c0051d9888a6d2653bc1a0671056461a294c22bef1ffb38ecc62cb5b80",
+    "submit": "0x7ef7dec8ac17d50b4dbf0ff3ad38dd3ecd21472659a9649ceafa5fdad87ea6fa",
+    "assess": "0x6b76e8ab5f70ee350c72ca616595c4e482ba3997394f14da03d700b381d47140",
+    "verdict": "NO_MATCH",
+    "refund_parent": "0xf8d057896127431a60649f38a2bb6ab2a4d08a2cb808c370a3228cc3b752251a",
+    "refund_child": "0xf8e13963946464a3f469765a5e093254c8c38dec6c1b3efa2336ce0d46317fd7",
+    "child_type": 0,
+    "child_status": "FINALIZED",
+    "value_credited": true,
+    "value_wei": "1000000000000000",
+    "recipient_balance_delta_wei": "1000000000000000",
+    "reconcile": "0xc870acd90ba4d58b9cd273949b8a6af80194bb1c5090b8a9cfd3b561378983f7"
+  },
+  "adversarial": {
+    "submission_id": 2,
+    "wrong_actor": "0xa137310a2A00aea4b1Cf8eB6d0AfA687F8a5e57C",
+    "wrong_actor_transaction": "0xe4c0ca1b0e64f008d6dd0099b584eb9da5ff14f6c0426b239c4b121d672e0b26",
+    "wrong_actor_triggered_transactions": [],
+    "refund_parent": "0xb9a0856902bd989413bff8e1b9ef6876c7eb3417cce23940efa16b7d5fcf522c",
+    "refund_child": "0x5fe0cbe1cb7416cbf314f0d999539ce42c4a7ceabc90bba4c2ea0ea86aae4d22",
+    "value_credited": true,
+    "recipient_balance_delta_wei": "1000000000000000",
+    "reconcile": "0x9796112b28a6ff585347d632701a52c00ffbba85e5eea9c069c84371a6b37be9",
+    "replay_transaction": "0xb2da5df2b0dfebc12c4bc1702d65fc215c3dac032d6a0cd94e76e88b704d5d34",
+    "replay_triggered_transactions": [],
+    "final_refund_state": 2,
+    "final_bond_returned": 1,
+    "final_bond_wei": "0"
+  },
+  "final_accounting": {
+    "total_bonded": "3000000000000000",
+    "total_returned": "3000000000000000",
+    "pending_refunds": "0",
+    "active_bonds": "0"
+  }
+}

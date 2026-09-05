@@ -1,24 +1,19 @@
 # Deployment candidate
 
-Status: deployed and fingerprint-verified on GenLayer Studionet.
+Status: deployed and live payout verification passed on 2026-09-05.
 
 - Source: `contracts/PublicRecallSentinel.py`
-- Protocol fingerprint: `PRS-1.1.0-audit`
-- Source SHA-256: `35f9f8ec90a67c3c7c2468109fb5d7cca9a98e01ea041b3b1bf5150ca067df27`
+- Protocol: `PRS-1.2.0-settlement`
+- Source file SHA-256: `b162ea8afa6049720fe6775399a0b5295c05ecd591e137856cd218766d458b30`
 - Constructor arguments: none
-- Local contract tests: `24 passed`
+- Direct contract tests: 48 passed
+- Receipt-verifier JavaScript tests: 11 passed
+- SDK lint and semantic validation: passed
 - Frontend production build: passed
-- Contract: `0x0cd1908393c24b0426bC7Ac75901afdb14d9D3de`
-- Explorer: https://explorer-studio.genlayer.com/address/0x0cd1908393c24b0426bC7Ac75901afdb14d9D3de
+- Contract: `0xC04400A0B02e495731AD0a5fbc1A1f777Fe9017c`
+- Explorer: https://explorer-studio.genlayer.com/address/0xC04400A0B02e495731AD0a5fbc1A1f777Fe9017c
+- Live evidence: `studionet-settlement-2026-09-05.json`
 
-## Mandatory post-deployment check
+The old `0x0cd1908393c24b0426bC7Ac75901afdb14d9D3de` has a confirmed failed refund and must not be used as the new deployment. Do not upgrade it in place with this changed storage layout; deploy a fresh instance.
 
-Before sending any lifecycle transaction, call:
-
-```text
-get_protocol_version() -> PRS-1.1.0-audit
-```
-
-Then inspect the deployed source in Explorer and confirm the authority policy through `get_source_policy()`. The lifecycle script refuses to continue if the fingerprint differs.
-
-The deployed instance returned the required fingerprint and the exact FOOD/DRUG FDA source policy. The former address `0xd6a356e38b585eD997A188802CC5e6f0166231c0` is evidence for the superseded pre-audit revision only.
+Deployed source bytes exactly matched the local file SHA-256. Positive MATCH, negative NO_MATCH, wrong-wallet and replay paths ran on Studionet. Three linked SEND children finalized with `value_credited=true`; each observed reporter balance delta was exactly +0.001 GEN. Final accounting is bonded = returned = 0.003 GEN, pending = active = 0. Evidence is committed separately.

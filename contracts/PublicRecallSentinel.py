@@ -4,6 +4,17 @@ from genlayer import *
 
 import json
 import typing
+import base64
+from genlayer.py import calldata
+
+
+@gl.evm.contract_interface
+class _Recipient:
+    class View:
+        pass
+
+    class Write:
+        pass
 
 
 class PublicRecallSentinel(gl.Contract):
@@ -12,6 +23,7 @@ class PublicRecallSentinel(gl.Contract):
     assessment_count: u256
     total_bonded: u256
     total_returned: u256
+    total_pending: u256
 
     watch_owners: TreeMap[str, Address]
     watch_distributors: TreeMap[str, Address]
@@ -31,13 +43,17 @@ class PublicRecallSentinel(gl.Contract):
     submission_urls: TreeMap[str, str]
     submission_bonds: TreeMap[str, u256]
     submission_bond_returned: TreeMap[str, u256]
+    refund_states: TreeMap[str, u256]
+    refund_attempts: TreeMap[str, u256]
+    refund_proofs: TreeMap[str, str]
     submission_assessment_counts: TreeMap[str, u256]
     submission_states: TreeMap[str, u256]
     submission_verdicts: TreeMap[str, str]
     assessment_records: TreeMap[str, str]
 
     BOND_WEI = 1000000000000000
-    PROTOCOL_VERSION = 'PRS-1.1.0-audit'
+    PROTOCOL_VERSION = 'PRS-1.2.0-settlement'
+    SETTLEMENT_RPC = 'https://studio.genlayer.com/api'
 
     def __init__(self):
         self.watch_count = u256(0)
@@ -45,6 +61,7 @@ class PublicRecallSentinel(gl.Contract):
         self.assessment_count = u256(0)
         self.total_bonded = u256(0)
         self.total_returned = u256(0)
+        self.total_pending = u256(0)
 
     def _key(self, value: u256) -> str:
         return str(int(value))
@@ -118,6 +135,9 @@ class PublicRecallSentinel(gl.Contract):
         self.submission_urls[key] = url
         self.submission_bonds[key] = u256(self.BOND_WEI)
         self.submission_bond_returned[key] = u256(0)
+        self.refund_states[key] = u256(0)
+        self.refund_attempts[key] = u256(0)
+        self.refund_proofs[key] = ''
         self.submission_assessment_counts[key] = u256(0)
         self.submission_states[key] = u256(1)
         self.submission_verdicts[key] = 'NOTICE_SUBMITTED'
@@ -221,7 +241,7 @@ class PublicRecallSentinel(gl.Contract):
         return result
 
     @gl.public.write
-    def return_bond(self, submission_id: u256) -> str:
+    def return_bond(self, submission_id: u256, attempt: u256) -> str:
         if submission_id >= self.submission_count:
             return 'SUBMISSION_NOT_FOUND'
         skey = self._key(submission_id)
@@ -232,11 +252,118 @@ class PublicRecallSentinel(gl.Contract):
             return 'REPORTER_ONLY'
         if self.submission_bond_returned[skey] == u256(1):
             return 'BOND_ALREADY_RETURNED'
+        if self.refund_states[skey] == u256(1):
+            return 'REFUND_PENDING'
+        if attempt != self.refund_attempts[skey] + u256(1):
+            return 'INVALID_REFUND_ATTEMPT'
         amount = self.submission_bonds[skey]
-        self.submission_bond_returned[skey] = u256(1)
-        self.submission_bonds[skey] = u256(0)
-        self.total_returned = self.total_returned + amount
-        gl.get_contract_at(self.submission_reporters[skey]).emit_transfer(value=amount)
+        # Outgoing messages may already have debited the balance. Never use
+        # another reporter's reserved bond to replace a failed transfer.
+        required = self.total_bonded - self.total_returned - self.total_pending
+        if self.balance < required:
+            return 'REFUND_RESERVE_SHORTFALL'
+        _Recipient(self.submission_reporters[skey]).emit_transfer(value=amount)
+        self.refund_states[skey] = u256(1)
+        self.refund_attempts[skey] = attempt
+        self.total_pending = self.total_pending + amount
+        return 'REFUND_REQUESTED'
+
+    @gl.public.write.payable
+    def fund_refund_reserve(self) -> str:
+        # Donations carry no withdrawal rights and do not alter liabilities.
+        if gl.message.value == 0:
+            raise gl.vm.UserError('POSITIVE_RESERVE_REQUIRED')
+        return 'RESERVE_FUNDED'
+
+    def _settlement_evidence(self, parent: dict, child: dict, parent_hash: str,
+                             contract: str, reporter: str, sid: int, attempt: int,
+                             amount: int) -> str:
+        """Validate raw Studionet receipts, never a caller-authored verdict.
+
+        This deliberately trusts the fixed Studionet RPC, not arbitrary URLs.
+        It is a testnet receipt oracle, NOT a cryptographic chain proof.
+        """
+        try:
+            if parent['hash'].lower() != parent_hash or parent['status'] != 'FINALIZED':
+                return 'UNRESOLVED'
+            if parent['from_address'].lower() != reporter or parent['to_address'].lower() != contract:
+                return 'UNRESOLVED'
+            if parent['type'] != 2 or int(parent['value']) != 0:
+                return 'UNRESOLVED'
+            call = calldata.decode(base64.b64decode(parent['data']['calldata']))
+            if call != {'method': 'return_bond', 'args': [sid, attempt]}:
+                return 'UNRESOLVED'
+            leaders = parent['consensus_data']['leader_receipt']
+            if not leaders or leaders[0]['execution_result'] != 'SUCCESS':
+                return 'UNRESOLVED'
+            if parent['triggered_transactions'] != [child['hash']]:
+                return 'UNRESOLVED'
+            if child['triggered_by'].lower() != parent_hash or child['status'] != 'FINALIZED':
+                return 'UNRESOLVED'
+            if child['from_address'].lower() != contract or child['to_address'].lower() != reporter:
+                return 'UNRESOLVED'
+            if child['type'] != 0 or int(child['value']) != amount:
+                return 'UNRESOLVED'
+            receipts = (child.get('consensus_data') or {}).get('leader_receipt') or []
+            failed = bool(receipts and receipts[0].get('execution_result') == 'ERROR')
+            if child.get('value_credited') is True and not failed:
+                return 'PAID'
+            # Unknown/missing credit flags or nonterminal statuses cannot unlock retry.
+            if child.get('value_credited') is False and failed:
+                return 'FAILED'
+        except Exception:
+            pass
+        return 'UNRESOLVED'
+
+    @gl.public.write
+    def reconcile_refund(self, submission_id: u256, parent_hash: str) -> str:
+        if submission_id >= self.submission_count:
+            return 'SUBMISSION_NOT_FOUND'
+        key = self._key(submission_id)
+        if self.refund_states[key] != u256(1):
+            return 'REFUND_NOT_PENDING'
+        if len(parent_hash) != 66 or not parent_hash.startswith('0x') or any(c not in '0123456789abcdefABCDEF' for c in parent_hash[2:]):
+            return 'INVALID_TRANSACTION_HASH'
+        parent_hash = parent_hash.lower()
+        contract = str(gl.message.contract_address).lower()
+        reporter = str(self.submission_reporters[key]).lower()
+        sid, attempt, amount = int(submission_id), int(self.refund_attempts[key]), int(self.submission_bonds[key])
+
+        def retrieve() -> str:
+            def rpc(method: str, params: list) -> typing.Any:
+                response = gl.nondet.web.post(self.SETTLEMENT_RPC,
+                    headers={'Content-Type': 'application/json'},
+                    body=json.dumps({'jsonrpc':'2.0','id':1,'method':method,'params':params}))
+                if response.status != 200 or response.body is None or len(response.body) > 500000:
+                    return None
+                payload = json.loads(response.body.decode('utf-8'))
+                if payload.get('error') or payload.get('id') != 1:
+                    return None
+                return payload['result']
+            try:
+                if int(rpc('eth_chainId', []), 16) != 61999:
+                    return 'UNRESOLVED'
+                parent = rpc('eth_getTransactionByHash', [parent_hash])
+                children = parent.get('triggered_transactions', [])
+                if len(children) != 1:
+                    return 'UNRESOLVED'
+                child = rpc('eth_getTransactionByHash', [children[0]])
+                return self._settlement_evidence(parent, child, parent_hash, contract, reporter, sid, attempt, amount)
+            except Exception:
+                return 'UNRESOLVED'
+
+        verdict = gl.eq_principle.strict_eq(retrieve)
+        if verdict not in ['PAID', 'FAILED']:
+            return 'SETTLEMENT_UNRESOLVED'
+        self.refund_proofs[key] = parent_hash
+        self.total_pending = self.total_pending - self.submission_bonds[key]
+        if verdict == 'FAILED':
+            self.refund_states[key] = u256(3)
+            return 'REFUND_FAILED_RETRYABLE'
+        self.refund_states[key] = u256(2)
+        self.submission_bond_returned[key] = u256(1)
+        self.total_returned = self.total_returned + self.submission_bonds[key]
+        self.submission_bonds[key] = u256(0)
         return 'BOND_RETURNED'
 
     @gl.public.view
@@ -253,7 +380,7 @@ class PublicRecallSentinel(gl.Contract):
 
     @gl.public.view
     def get_accounting(self) -> str:
-        return json.dumps({'total_bonded':str(self.total_bonded),'total_returned':str(self.total_returned),'active_bonds':str(self.total_bonded-self.total_returned)}, sort_keys=True)
+        return json.dumps({'total_bonded':str(self.total_bonded),'total_returned':str(self.total_returned),'active_bonds':str(self.total_bonded-self.total_returned),'pending_refunds':str(self.total_pending),'settlement_rpc':self.SETTLEMENT_RPC}, sort_keys=True)
 
     @gl.public.view
     def get_watch(self, watch_id: u256) -> str:
@@ -267,7 +394,7 @@ class PublicRecallSentinel(gl.Contract):
         if submission_id >= self.submission_count:
             return json.dumps({'error':'SUBMISSION_NOT_FOUND'})
         key = self._key(submission_id)
-        return json.dumps({'submission_id':int(submission_id),'watch_id':int(self.submission_watches[key]),'reporter':str(self.submission_reporters[key]),'authority':self.submission_authorities[key],'notice_id':self.submission_notice_ids[key],'source_url':self.submission_urls[key],'state':int(self.submission_states[key]),'verdict':self.submission_verdicts[key],'bond_wei':str(self.submission_bonds[key]),'bond_returned':int(self.submission_bond_returned[key]),'assessment_count':int(self.submission_assessment_counts[key])}, sort_keys=True)
+        return json.dumps({'submission_id':int(submission_id),'watch_id':int(self.submission_watches[key]),'reporter':str(self.submission_reporters[key]),'authority':self.submission_authorities[key],'notice_id':self.submission_notice_ids[key],'source_url':self.submission_urls[key],'state':int(self.submission_states[key]),'verdict':self.submission_verdicts[key],'bond_wei':str(self.submission_bonds[key]),'bond_returned':int(self.submission_bond_returned[key]),'refund_state':int(self.refund_states[key]),'refund_attempt':int(self.refund_attempts[key]),'refund_proof':self.refund_proofs[key],'assessment_count':int(self.submission_assessment_counts[key])}, sort_keys=True)
 
     @gl.public.view
     def get_assessment(self, submission_id: u256, assessment_id: u256) -> str:

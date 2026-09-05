@@ -1,5 +1,7 @@
 # Adversarial audit
 
+> 2026-09-05 correction: this historical audit missed failed child settlement. It is not an assurance of paid bonds. The new settlement design, reproduced failure and remaining deployment gate are documented in `verification/settlement-correction.md` and `verification/local.md`.
+
 Date: 2026-09-03
 
 Audited revision: `PRS-1.1.0-audit`

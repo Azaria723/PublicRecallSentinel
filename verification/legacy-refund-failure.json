@@ -1,0 +1,31 @@
+{
+  "rpc": "https://studio.genlayer.com/api",
+  "chain_id": "0xf22f",
+  "observed_at": "2026-09-05T07:42:50.391Z",
+  "parent": {
+    "hash": "0x02ddd161b9fe51073bedcf9e37d7dfb2fc80ecf5622dd967600b1b77eb2af753",
+    "from": "0x67A1A08Fc4cf7D05c859d0d3D8398a3A30B1677e",
+    "to": "0x0cd1908393c24b0426bC7Ac75901afdb14d9D3de",
+    "type": 2,
+    "value": 0,
+    "status": "FINALIZED",
+    "triggered_by": null,
+    "value_credited": false,
+    "execution_result": "SUCCESS",
+    "result_base64": "AGxCT05EX1JFVFVSTkVE"
+  },
+  "children": [
+    {
+      "hash": "0xcdb4e1936e390058c3b62e3f9db9a83ff2934e654d5597c85575561d40eafed8",
+      "from": "0x0cd1908393c24b0426bC7Ac75901afdb14d9D3de",
+      "to": "0x67A1A08Fc4cf7D05c859d0d3D8398a3A30B1677e",
+      "type": 2,
+      "value": 1000000000000000,
+      "status": "FINALIZED",
+      "triggered_by": "0x02ddd161b9fe51073bedcf9e37d7dfb2fc80ecf5622dd967600b1b77eb2af753",
+      "value_credited": false,
+      "execution_result": "ERROR",
+      "result_base64": "Q29udHJhY3QgMHg2N0ExQTA4RmM0Y2Y3RDA1Yzg1OWQwZDNEODM5OGEzQTMwQjE2NzdlIG5vdCBmb3VuZA=="
+    }
+  ]
+}

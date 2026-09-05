@@ -1,3 +1,4 @@
+import {refundWithProof} from './settlement-proof.mjs';
 import {createClient} from '../frontend/node_modules/genlayer-js/dist/index.js';
 import {studionet} from '../frontend/node_modules/genlayer-js/dist/chains/index.js';
 import {TransactionStatus} from '../frontend/node_modules/genlayer-js/dist/types/index.js';
@@ -21,7 +22,7 @@ async function write(account,functionName,args=[],value=0n){
 }
 
 const version=await reader.readContract({address:contract,functionName:'get_protocol_version',args:[]});
-if(version!=='PRS-1.1.0-audit')throw new Error(`Wrong deployed revision: ${version}`);
+if(version!=='PRS-1.2.0-settlement')throw new Error(`Wrong deployed revision: ${version}`);
 const before=await parse('get_counts');const watchId=BigInt(before.watch_count),submissionId=BigInt(before.submission_count);
 console.log(`reporter=${reporter.address}`);console.log(`ephemeral_attacker=${attacker.address}`);
 await write(reporter,'register_watch',[reporter.address,'FOOD','Unrelated Security Fixture','Security regression fixture','SEC-LOT-1']);
@@ -29,13 +30,18 @@ await write(reporter,'submit_notice',[watchId,'FDA_FOOD','F-1170-2024'],BOND);
 await write(reporter,'assess_notice',[submissionId]);
 let submission=await parse('get_submission',[submissionId]);
 if(submission.state!==3||submission.bond_wei!==BOND.toString())throw new Error(`Terminal fixture failed: ${JSON.stringify(submission)}`);
-await write(attacker,'return_bond',[submissionId]);
+const attackHash=await write(attacker,'return_bond',[submissionId,1n]);
+const attackTx=await reader.getTransaction({hash:attackHash});if((attackTx.triggered_transactions||[]).length)throw new Error('Wrong actor emitted a transfer');
 const afterAttack=await parse('get_submission',[submissionId]);
 if(afterAttack.bond_returned!==0||afterAttack.bond_wei!==BOND.toString())throw new Error('Wrong actor mutated the bond');
 console.log(`wrong_actor_no_mutation=${JSON.stringify(afterAttack)}`);
-await write(reporter,'return_bond',[submissionId]);submission=await parse('get_submission',[submissionId]);
+await refundWithProof({contract,reporter:reporter.address,submissionId,write:(fn,args)=>write(reporter,fn,args),parse});submission=await parse('get_submission',[submissionId]);
 if(submission.bond_returned!==1||submission.bond_wei!=='0')throw new Error('Reporter bond return failed');
-await write(reporter,'return_bond',[submissionId]);
+const balanceBeforeReplay=await reader.getBalance({address:reporter.address});
+const replayHash=await write(reporter,'return_bond',[submissionId,1n]);
+const replayTx=await reader.getTransaction({hash:replayHash});
+const balanceAfterReplay=await reader.getBalance({address:reporter.address});
+if((replayTx.triggered_transactions||[]).length||balanceAfterReplay!==balanceBeforeReplay)throw new Error('Replay emitted or credited a second transfer');
 const afterReplay=await parse('get_submission',[submissionId]);
 if(JSON.stringify(afterReplay)!==JSON.stringify(submission))throw new Error('Replay mutated the returned bond');
 console.log(`replay_no_mutation=${JSON.stringify(afterReplay)}`);

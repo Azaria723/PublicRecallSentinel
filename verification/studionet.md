@@ -1,5 +1,7 @@
 # Studionet verification
 
+> CORRECTION 2026-09-05: historical recall assessments below remain useful, but the refund-success claims are INVALID. The reporter's child payout failed with `Contract … not found` and `value_credited=false`. Internal accounting was not recipient evidence. Do not submit this file as proof of completed payout. See `legacy-refund-failure.json` and `settlement-correction.md`. Revision PRS-1.2.0-settlement requires a new deployment and new live proof.
+
 Date: 2026-09-03
 
 Contract: `0x0cd1908393c24b0426bC7Ac75901afdb14d9D3de`

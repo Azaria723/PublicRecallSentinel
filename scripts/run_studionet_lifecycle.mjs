@@ -1,3 +1,4 @@
+import {refundWithProof} from './settlement-proof.mjs';
 import {createClient} from '../frontend/node_modules/genlayer-js/dist/index.js';
 import {studionet} from '../frontend/node_modules/genlayer-js/dist/chains/index.js';
 import {TransactionStatus} from '../frontend/node_modules/genlayer-js/dist/types/index.js';
@@ -26,7 +27,7 @@ async function write(functionName,args=[],value=0n){
 
 console.log(`contract=${contract}`);console.log(`actor=${account.address}`);
 const version=await reader.readContract({address:contract,functionName:'get_protocol_version',args:[]});
-if(version!=='PRS-1.1.0-audit')throw new Error(`Wrong deployed revision: ${version}`);
+if(version!=='PRS-1.2.0-settlement')throw new Error(`Wrong deployed revision: ${version}`);
 console.log(`protocol_version=${version}`);
 const before=await parse('get_counts');console.log(`counts_before=${JSON.stringify(before)}`);
 const positiveWatch=BigInt(before.watch_count),positiveSubmission=BigInt(before.submission_count);
@@ -35,7 +36,7 @@ await write('submit_notice',[positiveWatch,'FDA_FOOD','F-1170-2024'],BOND);
 await write('assess_notice',[positiveSubmission]);
 const positive=await parse('get_watch',[positiveWatch]);console.log(`positive=${JSON.stringify(positive)}`);
 if(positive.state!==2||positive.verdict!=='MATCH')throw new Error(`Positive lifecycle failed: ${JSON.stringify(positive)}`);
-await write('return_bond',[positiveSubmission]);
+await refundWithProof({contract,reporter:account.address,submissionId:positiveSubmission,write,parse});
 const returned=await parse('get_submission',[positiveSubmission]);
 if(returned.bond_returned!==1||returned.bond_wei!=='0')throw new Error(`Bond return failed: ${JSON.stringify(returned)}`);
 
@@ -45,7 +46,7 @@ await write('submit_notice',[negativeWatch,'FDA_FOOD','F-1170-2024'],BOND);
 await write('assess_notice',[negativeSubmission]);
 const negative=await parse('get_watch',[negativeWatch]);console.log(`negative=${JSON.stringify(negative)}`);
 if(negative.state!==3||negative.verdict!=='NO_MATCH')throw new Error(`Negative lifecycle failed: ${JSON.stringify(negative)}`);
-await write('return_bond',[negativeSubmission]);
+await refundWithProof({contract,reporter:account.address,submissionId:negativeSubmission,write,parse});
 console.log(`accounting=${JSON.stringify(await parse('get_accounting'))}`);
 console.log(`counts_after=${JSON.stringify(await parse('get_counts'))}`);
 console.log(`transactions=${JSON.stringify(txs)}`);
